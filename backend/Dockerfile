@@ -3,13 +3,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
-COPY prisma ./prisma
-COPY prisma.config.ts ./
+# Copy from backend/ subdirectory (Railway builds from repo root)
+COPY backend/package*.json ./
+COPY backend/prisma ./prisma
+COPY backend/prisma.config.ts ./
 
 RUN npm ci
 
-COPY . .
+COPY backend/ .
 
 RUN npx prisma generate
 RUN npm run build
@@ -19,19 +20,12 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --only=production
-
-# Copy compiled app and prisma client
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# Copy prisma schema, migrations, and config
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/package*.json ./
 
 EXPOSE 4000
 
-# Use DATABASE_URL from docker-compose environment directly
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
