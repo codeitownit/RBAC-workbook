@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { execSync } from "child_process";
 import authRouter from "./routes/auth";
 import worksheetsRouter from "./routes/worksheets";
 import questionsRouter from "./routes/questions";
@@ -18,5 +19,21 @@ app.use("/api/worksheets", worksheetsRouter);
 app.use("/api/questions",  questionsRouter);
 app.use("/api/answers",    answersRouter);
 app.use("/api/grades",     gradesRouter);
+
+// Run migrations before starting the server
+try {
+  console.log("Running database migrations...");
+  execSync("npx prisma migrate deploy", {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      DATABASE_URL: process.env.DATABASE_URL,
+    },
+  });
+  console.log("Migrations complete.");
+} catch (err) {
+  console.error("Migration failed:", err);
+  process.exit(1);
+}
 
 app.listen(4000, () => console.log("Server running on http://localhost:4000"));
