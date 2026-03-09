@@ -28,4 +28,4 @@ COPY --from=builder /app/package*.json ./
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --url $DATABASE_URL && node dist/index.js"]

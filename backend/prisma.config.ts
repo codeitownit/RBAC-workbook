@@ -1,11 +1,11 @@
 /// <reference types="node" />
 import { defineConfig } from "prisma/config";
 
-// In Docker, DATABASE_URL is injected directly as an env var by docker-compose.
-// dotenv/config is only needed for local development outside Docker.
-if (process.env.NODE_ENV !== "production") {
-  await import("dotenv/config");
-}
+// dotenv only needed locally — in production DATABASE_URL is injected by the platform
+try {
+  const dotenv = await import("dotenv");
+  dotenv.config();
+} catch {}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -13,6 +13,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env.DATABASE_URL!,
+    url: process.env.DATABASE_URL ?? "",
   },
 });
