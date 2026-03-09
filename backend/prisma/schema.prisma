@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  DIRECTOR
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  password  String   // hashed with bcrypt
+  role      Role
+  createdAt DateTime @default(now())
+
+  worksheets    Worksheet[]
+  questions     Question[]
+  answers       Answer[]
+  grades        Grade[]
+}
+
+model Worksheet {
+  id        Int      @id @default(autoincrement())
+  title     String
+  createdAt DateTime @default(now())
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById Int
+
+  questions Question[]
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+
+  worksheet   Worksheet @relation(fields: [worksheetId], references: [id], onDelete: Cascade)
+  worksheetId Int
+
+  createdBy   User @relation(fields: [createdById], references: [id])
+  createdById Int
+
+  answers Answer[]
+}
+
+model Answer {
+  id          Int      @id @default(autoincrement())
+  text        String
+  teacherEdit String?  // teacher's suggested correction
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionId Int
+
+  student   User @relation(fields: [studentId], references: [id])
+  studentId Int
+
+  grade Grade?
+
+  @@unique([questionId, studentId]) // one answer per student per question
+}
+
+model Grade {
+  id       Int    @id @default(autoincrement())
+  score    Int    // 0–100
+  feedback String?
+  approved Boolean @default(false)
+
+  answer   Answer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  answerId Int    @unique
+
+  gradedBy   User @relation(fields: [gradedById], references: [id])
+  gradedById Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
