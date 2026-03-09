@@ -13,7 +13,11 @@ router.post("/signup", async (req, res) => {
   try {
     const user = await prisma.user.create({ data: { name, password: hashed, role } });
     const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET!, { expiresIn: "7d" });
-    res.cookie("token", token, { httpOnly: true, sameSite: "lax" });
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
     res.json({ id: user.id, name: user.name, role: user.role });
   } catch {
     res.status(400).json({ error: "Name already taken" });
@@ -26,7 +30,11 @@ router.post("/login", async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password)))
     return res.status(401).json({ error: "Invalid credentials" });
   const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET!, { expiresIn: "7d" });
-  res.cookie("token", token, { httpOnly: true, sameSite: "lax" });
+  res.cookie("token", token, {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
   res.json({ id: user.id, name: user.name, role: user.role });
 });
 
